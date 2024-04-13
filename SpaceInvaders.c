@@ -178,35 +178,47 @@ int main()
 
         // Poruszanie automatycznie kosmitów
         for (int i = 0; i < num_aliens; ++i) {
-            if (alive[i]) {
-                if (dir2 == LEFT)
+            if (alive[i]) 
+            {
+                if (graczY > alien_y[1])
                 {
-                    if (alien_x[i] < prawaBanda - alien_size) // Sprawdza czy dotarł do krawędzi
+                    if (dir2 == LEFT)
                     {
-                        alien_x[i] += movespeed_alien;
-                    }
-                    else
-                    {
-                        dir2 = RIGHT; // zmiana kierunku
-                        for (int i = 0; i < num_aliens; ++i)
+                        if (alien_x[i] < prawaBanda - alien_size) // Sprawdza czy dotarł do krawędzi
                         {
-                            alien_y[i] += 25; // opadnięcie
+                            alien_x[i] += movespeed_alien;
+                        }
+                        else
+                        {
+                            dir2 = RIGHT; // zmiana kierunku
+                            for (int i = 0; i < num_aliens; ++i)
+                            {
+                                alien_y[i] += 25; // opadnięcie
+                            }
+                        }
+                    }
+                    else if (dir2 == RIGHT)
+                    {
+                        if (alien_x[i] > lewaBanda) // Sprawdza czy dotarł do krawędzi
+                        {
+                            alien_x[i] -= movespeed_alien;
+                        }
+                        else
+                        {
+                            dir2 = LEFT; // zmiana kierunku
+                            for (int i = 0; i < num_aliens; ++i)
+                            {
+                                alien_y[i] += 25; // opadnięcie
+                            }
                         }
                     }
                 }
-                else if (dir2 == RIGHT)
+                else
                 {
-                    if (alien_x[i] > lewaBanda) // Sprawdza czy dotarł do krawędzi
+                    --zycia;
+                    for (int i = 0; i < num_aliens; ++i)
                     {
-                        alien_x[i] -= movespeed_alien;
-                    }
-                    else
-                    {
-                        dir2 = LEFT; // zmiana kierunku
-                        for (int i = 0; i < num_aliens; ++i)
-                        {
-                            alien_y[i] += 25; // opadnięcie
-                        }
+                        alien_y[i] = 10; // powrot
                     }
                 }
             }
