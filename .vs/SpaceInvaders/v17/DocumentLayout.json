@@ -1,0 +1,37 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\adamk\\OneDrive\\Dokumenty\\programowanie\\SpaceInvaders\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{D21E53A0-8A23-49DF-BB64-90D4E61074D4}|allegr5test.vcxproj|C:\\Users\\adamk\\OneDrive\\Dokumenty\\programowanie\\SpaceInvaders\\SpaceInvaders.c||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{D21E53A0-8A23-49DF-BB64-90D4E61074D4}|allegr5test.vcxproj|solutionrelative:SpaceInvaders.c||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "SpaceInvaders.c",
+              "DocumentMoniker": "C:\\Users\\adamk\\OneDrive\\Dokumenty\\programowanie\\SpaceInvaders\\SpaceInvaders.c",
+              "RelativeDocumentMoniker": "SpaceInvaders.c",
+              "ToolTip": "C:\\Users\\adamk\\OneDrive\\Dokumenty\\programowanie\\SpaceInvaders\\SpaceInvaders.c",
+              "RelativeToolTip": "SpaceInvaders.c",
+              "ViewState": "AQIAABUAAAAAAAAAAAAAADYAAAAhAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
+              "WhenOpened": "2024-03-24T16:21:23.465Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

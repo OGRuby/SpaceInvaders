@@ -1,0 +1,4 @@
+﻿  allegr5test.c
+C:\Users\adamk\OneDrive\Dokumenty\programowanie\allegr5test\allegr5test.c(146,86): warning C4047: "funkcja": "int" różni się w poziomach operatorów pośrednich od "void *"
+C:\Users\adamk\OneDrive\Dokumenty\programowanie\allegr5test\allegr5test.c(146,86): warning C4024: "al_show_native_message_box": różne typy dla formalnego i rzeczywistego parametru 6
+  allegr5test.vcxproj -> C:\Users\adamk\OneDrive\Dokumenty\programowanie\allegr5test\x64\Debug\allegr5test.exe
