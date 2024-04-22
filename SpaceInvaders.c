@@ -61,7 +61,7 @@ int main()
     sample = al_load_sample("wav/d-_-b.wav");
     sampleInstance = al_create_sample_instance(sample);
     al_attach_sample_instance_to_mixer(sampleInstance, al_get_default_mixer());
-    al_set_sample_instance_gain(sampleInstance, 0.1);
+    al_set_sample_instance_gain(sampleInstance, 0.2);
     //zmienne z granicami okna oraz pola gry
     int rightSide = al_get_display_width(display), leftSide = 0;
     int bottomSide = al_get_display_height(display), topSide = 0;
@@ -160,6 +160,7 @@ int main()
                                 bullet_fired = false;
                                 alive[i] = false;
                                 movespeed_alien = movespeed_alien + 1; // co zabicie kozmita przyśpiesza
+                                wynik++;//zwiekszenie wyniku przy zabiciu kosmity
                             }
                         }
                     }
@@ -169,12 +170,7 @@ int main()
 
 
         poruszanie(&graczX, prawaBanda, lewaBanda);//poruszanie gracza
-        //wstepne ustawianie wyniku LPM
-        if (event.type == ALLEGRO_EVENT_MOUSE_BUTTON_UP)
-        {
-            wynik++;
-
-        }
+        
 
         // Poruszanie automatycznie kosmitów
         for (int i = 0; i < num_aliens; ++i) {
@@ -243,7 +239,7 @@ int main()
             {
                 al_draw_filled_rectangle(bullet_x, bullet_y, bullet_x + 6, bullet_y + 6, al_map_rgb(255, 0, 0));
             }
-            al_flip_display();
+            
 
 
 
@@ -321,6 +317,6 @@ bool collision(int obiekt1X, int obiekt1Y, int obiekt1Width, int obiekt1Height, 
 }
 void getNick(char nick[])
 {
-    al_show_native_message_box(NULL, "Podaj swoj nick", "Nick", "", NULL, ALLEGRO_MESSAGEBOX_QUESTION);
+    al_show_native_message_box(NULL, "Podaj swoj nick", "Nick:", "", NULL, ALLEGRO_MESSAGEBOX_QUESTION);
     fgets(nick, 100, stdin); // Pobranie nicku z konsoli 
 }
