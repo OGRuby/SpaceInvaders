@@ -28,8 +28,13 @@ int main() {
     ALLEGRO_BITMAP* player = NULL;
     ALLEGRO_BITMAP* enemy1 = NULL;
     ALLEGRO_BITMAP* tlo1 = NULL;
-    ALLEGRO_SAMPLE* sample = NULL;
-    ALLEGRO_SAMPLE_INSTANCE* sampleInstance = NULL;
+    ALLEGRO_SAMPLE* gameTheme = NULL;
+    ALLEGRO_SAMPLE_INSTANCE* gameThemeInstance = NULL;
+    ALLEGRO_SAMPLE* shootTheme = NULL;
+    ALLEGRO_SAMPLE_INSTANCE* shootThemeInstance = NULL;
+    ALLEGRO_SAMPLE* invaderKillTheme = NULL;
+    ALLEGRO_SAMPLE_INSTANCE* invaderKillThemeInstance = NULL;
+
     ALLEGRO_FONT* font = NULL;
     ALLEGRO_FONT* fontLogo = NULL;
     ALLEGRO_EVENT event; // Utworzenie zmiennej do obsługi event'ów
@@ -63,11 +68,24 @@ int main() {
     al_start_timer(timer); // Uruchomienie timera
 
     // Obsługa plików audio
-    al_reserve_samples(1);
-    sample = al_load_sample("wav/d-_-b.wav");
-    sampleInstance = al_create_sample_instance(sample);
-    al_attach_sample_instance_to_mixer(sampleInstance, al_get_default_mixer());
-    al_set_sample_instance_gain(sampleInstance, 0.1);
+    al_reserve_samples(3);
+    gameTheme = al_load_sample("wav/gameTheme.wav");
+    gameThemeInstance = al_create_sample_instance(gameTheme);
+    al_attach_sample_instance_to_mixer(gameThemeInstance, al_get_default_mixer());
+    al_set_sample_instance_gain(gameThemeInstance, 1);
+    al_set_sample_instance_playmode(gameThemeInstance, ALLEGRO_PLAYMODE_LOOP);
+
+    shootTheme = al_load_sample("wav/shoot.wav");
+    shootThemeInstance = al_create_sample_instance(shootTheme);
+    al_attach_sample_instance_to_mixer(shootThemeInstance, al_get_default_mixer());
+    al_set_sample_instance_gain(shootThemeInstance, 1);
+    al_set_sample_instance_playmode(gameThemeInstance, ALLEGRO_PLAYMODE_ONCE);
+
+    invaderKillTheme = al_load_sample("wav/invaderkilled.wav");
+    invaderKillThemeInstance = al_create_sample_instance(invaderKillTheme);
+    al_attach_sample_instance_to_mixer(invaderKillThemeInstance, al_get_default_mixer());
+    al_set_sample_instance_gain(invaderKillThemeInstance, 0.7);
+    al_set_sample_instance_playmode(invaderKillThemeInstance, ALLEGRO_PLAYMODE_ONCE);
 
     // Zmienne z granicami okna oraz pola gry
     int rightSide = al_get_display_width(display), leftSide = 0;
@@ -283,7 +301,7 @@ int main() {
             
             sprintf_s(wynikText, sizeof(wynikText), "Wynik: %d", wynik); // Przekształcenie int na tablicę znaków
             sprintf_s(zyciaText, sizeof(zyciaText), "Zycia: %d", zycia); // ^
-            al_play_sample_instance(sampleInstance); // Odpalenie muzyki w tle
+            al_play_sample_instance(gameThemeInstance); // Odpalenie muzyki w tle
 
 
 
@@ -294,6 +312,7 @@ int main() {
                         bullet_x = graczX + 17; // Koordynaty pocisku
                         bullet_y = graczY +40;
                         bullet_fired = true;
+                        al_play_sample_instance(shootThemeInstance); 
                     }
                 }
             }
@@ -313,6 +332,7 @@ int main() {
                                     alive[i] = false;
                                     movespeed_alien += 0.1; // Co zabicie kosmity przyspiesza
                                     wynik++;
+                                    al_play_sample_instance(invaderKillThemeInstance);
                                 }
                             }
                         }
@@ -410,6 +430,7 @@ int main() {
 
                 if (bullet_fired) { // Pocisk
                     al_draw_filled_rectangle(bullet_x, bullet_y, bullet_x + 3, bullet_y + 12, al_map_rgb(255, 255, 255));
+                    
                 }
 
                 al_draw_text(font, al_map_rgb(255,255, 255), 10, bottomSide - 50, ALLEGRO_ALIGN_LEFT, player_name);
@@ -452,8 +473,11 @@ int main() {
     al_uninstall_keyboard();
     
     al_destroy_timer(timer);
-    al_destroy_sample(sample);
-    al_destroy_sample_instance(sampleInstance);
+    al_destroy_sample(gameTheme);
+    al_destroy_sample_instance(gameThemeInstance);
+    al_destroy_sample(shootTheme);
+    al_destroy_sample_instance(shootThemeInstance);
+
     al_uninstall_audio();
     al_destroy_font(font);
     return 0;
