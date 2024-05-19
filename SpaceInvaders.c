@@ -15,7 +15,10 @@
 #define Height_sreen 720 // Wysokość
 #define MAX_SCORES 100
 
-#define SCORE_FILE "wyniki.txt"
+typedef struct {
+    char nazwa[50];
+    int punkty;
+} Gracz;
 
 // Struktura do przechowywania wyniku
 typedef struct {
@@ -27,9 +30,11 @@ typedef struct {
 void poruszanie(int* graczX, int prawaBanda, int lewaBanda);
 bool collision(int graczX, int graczY, int w1, int h1, int x2, int y2, int w2, int h2);
 void Insert_Name(ALLEGRO_DISPLAY* display, ALLEGRO_FONT* font, char* player_name);
+void save_score(const char* filename, const char player_name[50], int score);
+void wyswietl_10_najlepszych(Gracz tablica_wynikow[], int liczba_wynikow, ALLEGRO_FONT* font);
+int odczytaj_wyniki(Gracz tablica_wynikow[], int max_wynikow);
+void Print_score(Gracz* gracz);
 
-int compare_scores(const void* a, const void* b);
-void save_score(const char* filename, const char* player_name, int score);
 
 int main() {
     // Utworzenie znaczników
@@ -145,7 +150,7 @@ int main() {
     int wynik = 0;
     char wynikText[20];
     char player_name[50];
-
+    const char* filename = "scores.txt";
     
 
     int bullet_x = -10, bullet_y = -10; // Pozycja pocisku
@@ -449,11 +454,11 @@ int main() {
                 al_draw_text(font, al_map_rgb(255,255,255), 10, 70, ALLEGRO_ALIGN_LEFT, wynikText); // Aktualizowanie wyniku
 
                 if (zycia == 0) {
-                    save_score(SCORE_FILE, player_name, wynik);
+                    save_score(filename, player_name, wynik);
                     oknoGry = 4;
                 }
                 if (num_aliens == 0) {
-                    save_score(SCORE_FILE, player_name, wynik);
+                    save_score(filename, player_name, wynik);
                     oknoGry = 5;
                 }
 
@@ -469,7 +474,8 @@ int main() {
         {
             if (event.type == ALLEGRO_EVENT_TIMER) {
                 al_draw_bitmap(tlo1, 0, 0, 0);
-                al_draw_text(fontLogo, al_map_rgb(0, 255, 0), rightSide / 2, topSide + 128, ALLEGRO_ALIGN_CENTER, "BEST SCORES");
+               
+                Print_score(fontLogo,font,rightSide,topSide);
                 
             }
             if (event.type == ALLEGRO_EVENT_KEY_DOWN)
@@ -601,23 +607,81 @@ void Insert_Name(ALLEGRO_DISPLAY* ekran, ALLEGRO_FONT* czcionka, char* player_na
 
 
 
-// Funkcja zapisująca wynik do pliku
-void save_score(const char* filename, const char* player_name, int score) {
-    FILE* file = fopen(filename, "a");
-    if (!file) {
-        fprintf(stderr, "Unable to open file %s for writing\n", filename);
+void save_score(const char* filename, const char player_name[50], int score) {
+    FILE* file = fopen(filename, "a"); // Otwieramy plik w trybie dołączania
+    if (file == NULL) {
+        perror("Nie można otworzyć pliku do zapisu");
         return;
     }
     fprintf(file, "%s %d\n", player_name, score);
     fclose(file);
 }
 
-// Funkcja do porównywania wyników (używana do sortowania)
-int compare_scores(const void* a, const void* b) {
-    Score* scoreA = (Score*)a;
-    Score* scoreB = (Score*)b;
-    return scoreB->score - scoreA->score;
+void wyswietl_10_najlepszych(Gracz tablica_wynikow[], int liczba_wynikow, ALLEGRO_FONT* fontLogo, ALLEGRO_FONT* font,int rightSide,int topSide) {
+    ALLEGRO_COLOR color = al_map_rgb(0, 255, 0);
+    int y = 100;
+
+    
+
+    al_draw_textf(fontLogo, color, rightSide / 2, topSide + 64, ALLEGRO_ALIGN_CENTER, "Najlepsze wyniki:");
+
+    for (int i = 0; i < 10 && i < liczba_wynikow; i++) {
+        al_draw_textf(font, color, rightSide / 2, topSide + 172,ALLEGRO_ALIGN_CENTER, "%d. %s - %d", i + 1, tablica_wynikow[i].nazwa, tablica_wynikow[i].punkty);
+        y += 30;
+    }
+
+    al_flip_display();
 }
 
+// Funkcja odczytująca istniejące wyniki
+int odczytaj_wyniki(Gracz tablica_wynikow[], int max_wynikow) {
+    FILE* plik;
+    int liczba_wynikow = 0;
+
+    if (fopen_s(&plik, "scores.txt", "r") == 0) {
+        while (fscanf_s(plik, "%s %d", tablica_wynikow[liczba_wynikow].nazwa, (unsigned)_countof(tablica_wynikow[liczba_wynikow].nazwa), &tablica_wynikow[liczba_wynikow].punkty) != EOF) {
+            liczba_wynikow++;
+            if (liczba_wynikow >= max_wynikow) // Zapobiegamy przekroczeniu rozmiaru tablicy
+                break;
+        }
+        fclose(plik);
+    }
+
+    return liczba_wynikow;
+}
+
+// Funkcja odczytująca wyświetlająca
+void Print_score(ALLEGRO_FONT* fontLogo,ALLEGRO_FONT* font,int rightSide,int topSide) {
+    FILE* plik;
+    Gracz tablica_wynikow[MAX_SCORES]; // Zdefiniuj rozmiar tablicy wyników
+    int liczba_wynikow = 0;
+    int i;
+
+    // Odczytujemy istniejące wyniki
+    liczba_wynikow = odczytaj_wyniki(tablica_wynikow, MAX_SCORES);
+
+
+    // Sortujemy wyniki malejąco
+    for (i = 0; i < liczba_wynikow - 1; i++) {
+        for (int j = 0; j < liczba_wynikow - i - 1; j++) {
+            if (tablica_wynikow[j].punkty < tablica_wynikow[j + 1].punkty) {
+                Gracz temp = tablica_wynikow[j];
+                tablica_wynikow[j] = tablica_wynikow[j + 1];
+                tablica_wynikow[j + 1] = temp;
+            }
+        }
+    }
+
+    // Zapisujemy posortowane wyniki do pliku
+    if (fopen_s(&plik, "scores.txt", "w") == 0) { // Użyj trybu "w" (zastępowanie)
+        for (i = 0; i < liczba_wynikow && i < MAX_SCORES; i++) {
+            fprintf(plik, "%s %d\n", tablica_wynikow[i].nazwa, tablica_wynikow[i].punkty);
+        }
+        fclose(plik);
+    }
+
+    // Wyświetlamy 10 najlepszych wyników
+    wyswietl_10_najlepszych(tablica_wynikow, liczba_wynikow,fontLogo,font,rightSide,topSide);
+}
 
 
