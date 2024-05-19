@@ -9,16 +9,27 @@
 #include <allegro5/allegro_ttf.h>
 #include <allegro5/allegro_native_dialog.h>
 
-#define num_aliens_per_row 16 // Liczba kosmitów na rząd
+#define num_aliens_per_row 19 // Liczba kosmitów na rząd
 #define alien_size 25 // Rozmiar kosmitów
 #define Width_sreen 1280 // Szerokość
 #define Height_sreen 720 // Wysokość
 #define MAX_SCORES 100
 
+#define SCORE_FILE "wyniki.txt"
+
+// Struktura do przechowywania wyniku
+typedef struct {
+    char name[50];
+    int score;
+} Score;
+
 // Inicjalizacja funkcji
 void poruszanie(int* graczX, int prawaBanda, int lewaBanda);
 bool collision(int graczX, int graczY, int w1, int h1, int x2, int y2, int w2, int h2);
 void Insert_Name(ALLEGRO_DISPLAY* display, ALLEGRO_FONT* font, char* player_name);
+
+int compare_scores(const void* a, const void* b);
+void save_score(const char* filename, const char* player_name, int score);
 
 int main() {
     // Utworzenie znaczników
@@ -269,7 +280,7 @@ int main() {
             {
                 if (event.keyboard.keycode == ALLEGRO_KEY_RIGHT)
 
-                    switch (wyborMenu)
+                    switch (wyborTrudnosci)
                     {
                     case 1:
                         
@@ -278,7 +289,7 @@ int main() {
 
                         break;
                     case 2:
-                        
+                        movespeed_alien = 2;
                         Insert_Name(display, font, player_name,tlo1);
                         oknoGry = 2;
                         break;
@@ -438,9 +449,14 @@ int main() {
                 al_draw_text(font, al_map_rgb(255,255,255), 10, 70, ALLEGRO_ALIGN_LEFT, wynikText); // Aktualizowanie wyniku
 
                 if (zycia == 0) {
-                    al_show_native_message_box(display, "Przegrana", ":/", "lipa", NULL, NULL); // Wyświetlenie powiadomienia o przegranej
-                    running = false; // Zamknięcie programu po przegranej
+                    save_score(SCORE_FILE, player_name, wynik);
+                    oknoGry = 4;
                 }
+                if (num_aliens == 0) {
+                    save_score(SCORE_FILE, player_name, wynik);
+                    oknoGry = 5;
+                }
+
                 if (event.type == ALLEGRO_EVENT_KEY_DOWN)
             {
                 if (event.keyboard.keycode == ALLEGRO_KEY_ESCAPE)
@@ -454,6 +470,31 @@ int main() {
             if (event.type == ALLEGRO_EVENT_TIMER) {
                 al_draw_bitmap(tlo1, 0, 0, 0);
                 al_draw_text(fontLogo, al_map_rgb(0, 255, 0), rightSide / 2, topSide + 128, ALLEGRO_ALIGN_CENTER, "BEST SCORES");
+                
+            }
+            if (event.type == ALLEGRO_EVENT_KEY_DOWN)
+            {
+                if (event.keyboard.keycode == ALLEGRO_KEY_ESCAPE)
+                    oknoGry = 0;
+            }
+        }
+        if (oknoGry == 4)
+        {
+            if (event.type == ALLEGRO_EVENT_TIMER) {
+                al_draw_bitmap(tlo1, 0, 0, 0);
+                al_draw_text(fontLogo, al_map_rgb(0, 255, 0), rightSide / 2, topSide + 128, ALLEGRO_ALIGN_CENTER, "Przegrana");
+            }
+            if (event.type == ALLEGRO_EVENT_KEY_DOWN)
+            {
+                if (event.keyboard.keycode == ALLEGRO_KEY_ESCAPE)
+                    oknoGry = 0;
+            }
+        }
+        if (oknoGry == 5)
+        {
+            if (event.type == ALLEGRO_EVENT_TIMER) {
+                al_draw_bitmap(tlo1, 0, 0, 0);
+                al_draw_text(fontLogo, al_map_rgb(0, 255, 0), rightSide / 2, topSide + 128, ALLEGRO_ALIGN_CENTER, "Wygrana");
             }
             if (event.type == ALLEGRO_EVENT_KEY_DOWN)
             {
@@ -477,7 +518,9 @@ int main() {
     al_destroy_sample_instance(gameThemeInstance);
     al_destroy_sample(shootTheme);
     al_destroy_sample_instance(shootThemeInstance);
-
+    al_destroy_sample(invaderKillTheme);
+    al_destroy_sample_instance(invaderKillThemeInstance);
+   
     al_uninstall_audio();
     al_destroy_font(font);
     return 0;
@@ -555,102 +598,26 @@ void Insert_Name(ALLEGRO_DISPLAY* ekran, ALLEGRO_FONT* czcionka, char* player_na
     player_name[49] = '\0'; // Upewnij się, że string jest zakończony null
 }
 
-// Funkcja wyświetlająca 10 najlepszych wyników
-void wyswietl_10_najlepszych(char player_names[][50], int scores[], int liczba_wynikow, ALLEGRO_FONT* font) {
-    ALLEGRO_COLOR color = al_map_rgb(255, 255, 255);
-    int y = 100;
 
-    al_clear_to_color(al_map_rgb(0, 0, 0));
-    al_draw_textf(font, color, 400, 50, ALLEGRO_ALIGN_CENTER, "Najlepsze wyniki:");
 
-    for (int i = 0; i < 10 && i < liczba_wynikow; i++) {
-        al_draw_textf(font, color, 400, y, ALLEGRO_ALIGN_CENTER, "%d. %s - %d", i + 1, player_names[i], scores[i]);
-        y += 34;
+
+// Funkcja zapisująca wynik do pliku
+void save_score(const char* filename, const char* player_name, int score) {
+    FILE* file = fopen(filename, "a");
+    if (!file) {
+        fprintf(stderr, "Unable to open file %s for writing\n", filename);
+        return;
     }
-
-    al_flip_display();
+    fprintf(file, "%s %d\n", player_name, score);
+    fclose(file);
 }
 
-// Funkcja zapisująca nowy wynik
-void zapisz_wynik(char player_name[], int wynik) {
-    FILE* plik;
-    char player_names[MAX_SCORES][50];
-    int scores[MAX_SCORES];
-    int liczba_wynikow = 0;
-
-    // Odczytujemy istniejące wyniki
-    liczba_wynikow = odczytaj_wyniki(player_names, scores, MAX_SCORES);
-
-    // Dodajemy nowy wynik do tablicy
-    if (liczba_wynikow < MAX_SCORES) {
-        strcpy_s(player_names[liczba_wynikow], sizeof(player_names[liczba_wynikow]), player_name);
-        scores[liczba_wynikow] = wynik;
-        liczba_wynikow++;
-    }
-    else {
-        // Sprawdzamy, czy nowy wynik jest lepszy niż któryś z istniejących
-        for (int i = 0; i < MAX_SCORES; i++) {
-            if (wynik > scores[i]) {
-                // Przesuwamy wyniki w dół
-                for (int j = MAX_SCORES - 1; j > i; j--) {
-                    strcpy_s(player_names[j], sizeof(player_names[j]), player_names[j - 1]);
-                    scores[j] = scores[j - 1];
-                }
-                // Dodajemy nowy wynik
-                strcpy_s(player_names[i], sizeof(player_names[i]), player_name);
-                scores[i] = wynik;
-                break;
-            }
-        }
-    }
-
-    // Sortujemy wyniki malejąco
-    for (int i = 0; i < liczba_wynikow - 1; i++) {
-        for (int j = 0; j < liczba_wynikow - i - 1; j++) {
-            if (scores[j] < scores[j + 1]) {
-                int temp_score = scores[j];
-                scores[j] = scores[j + 1];
-                scores[j + 1] = temp_score;
-
-                char temp_name[50];
-                strcpy_s(temp_name, sizeof(temp_name), player_names[j]);
-                strcpy_s(player_names[j], sizeof(player_names[j]), player_names[j + 1]);
-                strcpy_s(player_names[j + 1], sizeof(player_names[j + 1]), temp_name);
-            }
-        }
-    }
-
-    // Zapisujemy posortowane wyniki do pliku
-    if (fopen_s(&plik, "wyniki.txt", "w") == 0) { // Użyj trybu "w" (zastępowanie)
-        for (int i = 0; i < liczba_wynikow && i < MAX_SCORES; i++) {
-            fprintf(plik, "%s %d\n", player_names[i], scores[i]);
-        }
-        fclose(plik);
-    }
-
-    // Wyświetlamy 10 najlepszych wyników
-    ALLEGRO_DISPLAY* display = al_create_display(800, 600);
-    ALLEGRO_FONT* font = al_create_builtin_font();
-
-    wyswietl_10_najlepszych(player_names, scores, liczba_wynikow, font);
-
-    al_rest(5.0); // Poczekaj 5 sekund, aby użytkownik mógł zobaczyć wyniki
-
-    al_destroy_display(display);
+// Funkcja do porównywania wyników (używana do sortowania)
+int compare_scores(const void* a, const void* b) {
+    Score* scoreA = (Score*)a;
+    Score* scoreB = (Score*)b;
+    return scoreB->score - scoreA->score;
 }
 
-// Funkcja odczytująca wyniki z pliku
-int odczytaj_wyniki(char player_names[][50], int scores[], int max_scores) {
-    FILE* plik;
-    int liczba_wynikow = 0;
 
-    if (fopen_s(&plik, "wyniki.txt", "r") == 0) {
-        while (fscanf_s(plik, "%49s %d", player_names[liczba_wynikow], &scores[liczba_wynikow]) == 2) {
-            liczba_wynikow++;
-            if (liczba_wynikow >= max_scores) break;
-        }
-        fclose(plik);
-    }
 
-    return liczba_wynikow;
-}
