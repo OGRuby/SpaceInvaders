@@ -10,7 +10,7 @@
 #include <allegro5/allegro_native_dialog.h>
 
 #define num_aliens_per_row 19 // Liczba kosmitów na rząd
-#define alien_size 25 // Rozmiar kosmitów
+#define alien_size 27 // Rozmiar kosmitów
 #define Width_sreen 1280 // Szerokość
 #define Height_sreen 720 // Wysokość
 #define MAX_SCORES 100
@@ -43,7 +43,11 @@ int main() {
     ALLEGRO_TIMER* timer = NULL;
     ALLEGRO_BITMAP* player = NULL;
     ALLEGRO_BITMAP* enemy1 = NULL;
+    ALLEGRO_BITMAP* enemy2 = NULL;
+    ALLEGRO_BITMAP* enemy3 = NULL;
     ALLEGRO_BITMAP* tlo1 = NULL;
+    ALLEGRO_BITMAP* bok1 = NULL;
+    ALLEGRO_BITMAP* bok2 = NULL;
     ALLEGRO_SAMPLE* gameTheme = NULL;
     ALLEGRO_SAMPLE_INSTANCE* gameThemeInstance = NULL;
     ALLEGRO_SAMPLE* shootTheme = NULL;
@@ -74,7 +78,7 @@ int main() {
     // Instalacja klawiatury, myszy i audio
     al_install_audio();
     al_install_keyboard();
-    
+
 
     // Rejestracja rodzajów event'ów
     al_register_event_source(queue, al_get_keyboard_event_source());
@@ -111,32 +115,37 @@ int main() {
     // Załadowanie sprite'ów gracza oraz przeciwnika
     player = al_load_bitmap("img/player.png");
     enemy1 = al_load_bitmap("img/enemy1.png");
-    tlo1 = al_load_bitmap("img/tlo1.jpg");
+    enemy2 = al_load_bitmap("img/enemy2.png");
+    enemy3 = al_load_bitmap("img/enemy3.png");
+    tlo1 = al_load_bitmap("img/tlo1.png");
+    bok1 = al_load_bitmap("img/bok1.png");
+    bok2 = al_load_bitmap("img/bok2.png");
     al_convert_mask_to_alpha(player, al_map_rgb(0, 0, 0)); // Utworzenie kanału alfa na kolorze białym
     al_convert_mask_to_alpha(enemy1, al_map_rgb(0, 0, 0)); // ^
-    
+
     float skala_szerokosci = 15.0 / 420.0;  // Współczynnik skalowania szerokości
     float skala_wysokosci = skala_szerokosci * (300.0 / 420.0); // Współczynnik skalowania wysokości
 
     float x = rightSide / 2, y = bottomSide - 10; // Pozycja startowa gracza (środek)
     // Pozycja i rozmiar przeciwnika
-    int enemyWidth = al_get_bitmap_width(enemy1);
-    int enemyHeight = al_get_bitmap_height(enemy1);
+    int enemyWidth = al_get_bitmap_width(enemy2);
+    int enemyHeight = al_get_bitmap_height(enemy2);
     int enX = 0, enY = 0;
 
-    
-    int num_rows=6; // Liczba rzędów kosmitów
+
+    int num_rows = 6; // Liczba rzędów kosmitów
     int alive_row = num_rows - 1; // żyjące rzędy
     int dead = 0;
 
-    int num_aliens = num_aliens_per_row * num_rows; // Całkowita liczba kosmitów
+    int num_aliens = num_aliens_per_row * num_rows;// Całkowita liczba kosmitów
+    int aliens_counter = num_aliens;
 
     // Dynamiczna alokacja tablic pozycji i życia kosmitów
-    int* alien_x = (int*)malloc(num_aliens * sizeof(int));
-    int* alien_y = (int*)malloc(num_aliens * sizeof(int));
+    float* alien_x = (float*)malloc(num_aliens * sizeof(float));
+    float* alien_y = (float*)malloc(num_aliens * sizeof(float));
     bool* alive = (bool*)malloc(num_aliens * sizeof(bool));
 
-    int movespeed_alien = 1; // Prędkość kosmitów
+    float movespeed_alien = 0.9; // Prędkość kosmitów
     int dir2 = LEFT; // Deklaracja ruchu kosmitów
 
     // Pozycja i rozmiar gracza
@@ -151,24 +160,16 @@ int main() {
     char wynikText[20];
     char player_name[50];
     const char* filename = "scores.txt";
-    
+
 
     int bullet_x = -10, bullet_y = -10; // Pozycja pocisku
     bool bullet_fired = false; // Flaga informująca, czy pocisk został wystrzelony
 
-    // Inicjalizacja pozycji kosmitów
-    for (int row = 0; row < num_rows; ++row) {
-        for (int i = 0; i < num_aliens_per_row; ++i) {
-            int idx = row * num_aliens_per_row + i;
-            alien_x[idx] = i * 30 + lewaBanda;
-            alien_y[idx] = 10 + row * 40;
-            alive[idx] = true;
-        }
-    }
     
-    
-    
-    
+
+
+
+
     int oknoGry = 0;
     int wyborMenu = 1;
     int wyborTrudnosci = 1;
@@ -181,13 +182,13 @@ int main() {
         al_wait_for_event(queue, &event);
         if (event.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
             running = false;
-        
+
         if (oknoGry == 0)
         {
-            
+
             if (event.type == ALLEGRO_EVENT_TIMER) {
 
-                al_draw_bitmap(tlo1, 0, 0, 0);
+                al_draw_scaled_bitmap(tlo1, 0, 0, al_get_bitmap_width(tlo1), al_get_bitmap_height(tlo1), 0, 0, rightSide, Height_sreen, 0);
                 al_draw_text(fontLogo, al_map_rgb(0, 255, 0), rightSide / 2, topSide + 128, ALLEGRO_ALIGN_CENTER, "SPACE INVADERS");
                 if (wyborMenu == 1)
                     al_draw_text(font, al_map_rgb(255, 255, 255), rightSide / 2, bottomSide / 2 - 34, ALLEGRO_ALIGN_CENTER, ">START");
@@ -228,8 +229,8 @@ int main() {
                     switch (wyborMenu)
                     {
                     case 1:
-                        
-                        oknoGry = 1 ;
+
+                        oknoGry = 1;
                         break;
                     case 2:
                         oknoGry = 3;
@@ -241,14 +242,25 @@ int main() {
                         break;
                     }
             }
-
+            // Inicjalizacja pozycji kosmitów
+            for (int row = 0; row < num_rows; ++row) {
+                for (int i = 0; i < num_aliens_per_row; ++i) {
+                    int idx = row * num_aliens_per_row + i;
+                    alien_x[idx] = i * 30 + lewaBanda;
+                    alien_y[idx] = 25 + row * 40;
+                    alive[idx] = true;
+                }
+            }
+            wynik = 0;
+            zycia = 3;
+            movespeed_alien = 0.8;
 
         }
         if (oknoGry == 1)
         {
             if (event.type == ALLEGRO_EVENT_TIMER) {
 
-                al_draw_bitmap(tlo1, 0, 0, 0);
+                al_draw_scaled_bitmap(tlo1, 0, 0, al_get_bitmap_width(tlo1), al_get_bitmap_height(tlo1), 0, 0, rightSide, Height_sreen, 0);
                 al_draw_text(fontLogo, al_map_rgb(0, 255, 0), rightSide / 2, topSide + 128, ALLEGRO_ALIGN_CENTER, "POZIOM  TRUDNOSCI");
                 if (wyborTrudnosci == 1)
                     al_draw_text(font, al_map_rgb(255, 255, 255), rightSide / 2, bottomSide / 2 - 34, ALLEGRO_ALIGN_CENTER, ">LATWY");
@@ -288,14 +300,14 @@ int main() {
                     switch (wyborTrudnosci)
                     {
                     case 1:
-                        
-                        Insert_Name(display, font, player_name,tlo1);
+
+                        Insert_Name(display, font, player_name, tlo1,rightSide);
                         oknoGry = 2;
 
                         break;
                     case 2:
-                        movespeed_alien = 2;
-                        Insert_Name(display, font, player_name,tlo1);
+                        movespeed_alien *= 2;
+                        Insert_Name(display, font, player_name, tlo1,rightSide);
                         oknoGry = 2;
                         break;
 
@@ -314,7 +326,7 @@ int main() {
         }
         if (oknoGry == 2)
         {
-            
+
             sprintf_s(wynikText, sizeof(wynikText), "Wynik: %d", wynik); // Przekształcenie int na tablicę znaków
             sprintf_s(zyciaText, sizeof(zyciaText), "Zycia: %d", zycia); // ^
             al_play_sample_instance(gameThemeInstance); // Odpalenie muzyki w tle
@@ -326,9 +338,9 @@ int main() {
                 if (event.keyboard.keycode == ALLEGRO_KEY_SPACE) { // Wystrzelenie pocisku
                     if (!bullet_fired) { // Sprawdza istnienie pocisku (strzela tylko jeden na raz)
                         bullet_x = graczX + 17; // Koordynaty pocisku
-                        bullet_y = graczY +40;
+                        bullet_y = graczY + 40;
                         bullet_fired = true;
-                        al_play_sample_instance(shootThemeInstance); 
+                        al_play_sample_instance(shootThemeInstance);
                     }
                 }
             }
@@ -342,12 +354,17 @@ int main() {
                 else { // Sprawdź kolizję z kosmitami
                     for (int i = 0; i < num_aliens; ++i) {
                         if (alive[i]) {
-                            if (bullet_x > alien_x[i] && bullet_x < alien_x[i] + alien_size) {
+                            if (bullet_x > alien_x[i] && bullet_x < alien_x[i] + alien_size+5) {
                                 if (bullet_y > alien_y[i] && bullet_y < alien_y[i] + alien_size) {
                                     bullet_fired = false;
                                     alive[i] = false;
-                                    movespeed_alien += 0.1; // Co zabicie kosmity przyspiesza
-                                    wynik++;
+                                    aliens_counter--;
+                                    if (i < 38)
+                                        wynik += 3;
+                                    else if (i >= 38 && i < 76)
+                                        wynik += 2;
+                                    else if (i >= 76)
+                                        wynik++;
                                     al_play_sample_instance(invaderKillThemeInstance);
                                 }
                             }
@@ -359,7 +376,7 @@ int main() {
             poruszanie(&graczX, prawaBanda, lewaBanda); // Poruszanie gracza
 
             // Sprawdzanie czy linia kozmitów żyje
-            if (alive_row > 0)
+            if (alive_row >= 0)
             {
 
                 for (int i = 0; i < num_aliens_per_row; ++i)
@@ -395,7 +412,7 @@ int main() {
             // Poruszanie automatycznie kosmitów
             for (int i = 0; i < num_aliens; ++i) {
                 if (alive[i]) {
-                    if (graczY > alien_y[alive_row * num_aliens_per_row]) {
+                    if (graczY-10 > alien_y[alive_row * num_aliens_per_row]) {
                         if (dir2 == LEFT) {
                             if (alien_x[i] < prawaBanda - alien_size) { // Sprawdza, czy dotarł do krawędzi
                                 alien_x[i] += movespeed_alien;
@@ -403,7 +420,7 @@ int main() {
                             else {
                                 dir2 = RIGHT; // Zmiana kierunku
                                 for (int j = 0; j < num_aliens; ++j) {
-                                    alien_y[j] += 25; // Opadnięcie
+                                    alien_y[j] += 20; // Opadnięcie
                                 }
                             }
                         }
@@ -414,7 +431,7 @@ int main() {
                             else {
                                 dir2 = LEFT; // Zmiana kierunku
                                 for (int j = 0; j < num_aliens; ++j) {
-                                    alien_y[j] += 25; // Opadnięcie
+                                    alien_y[j] += 20; // Opadnięcie
                                 }
                             }
                         }
@@ -431,52 +448,62 @@ int main() {
                     }
                 }
             }
-
+            if (num_aliens == 0) {
+                save_score(filename, player_name, wynik);
+                oknoGry = 5;
+            }
             if (event.type == ALLEGRO_EVENT_TIMER) {
-                al_draw_bitmap(tlo1, 0, 0, 0);
+                al_draw_bitmap(bok1, 0,0,0);
+                al_draw_bitmap(bok2, prawaBanda, 0, 0);
+                al_draw_scaled_bitmap(tlo1, 0, 0, al_get_bitmap_width(tlo1), al_get_bitmap_height(tlo1),lewaBanda, 0, prawaBanda - lewaBanda, Height_sreen,  0);
                 al_draw_line(prawaBanda, topSide, prawaBanda, bottomSide, al_map_rgb(0, 0, 0), 3); // Zaznaczenie granic
                 al_draw_line(lewaBanda, topSide, lewaBanda, bottomSide, al_map_rgb(0, 0, 0), 3); // ^
                 al_draw_bitmap(player, graczX, graczY, 0); // Rysowanie sprite'a gracza
 
                 for (int i = 0; i < num_aliens; ++i) { // Kosmita
                     if (alive[i]) {
-                        al_draw_bitmap(enemy1,  alien_x[i], alien_y[i], 0); 
+                        if(i<38)
+                            al_draw_bitmap(enemy3, alien_x[i], alien_y[i], 0);
+                        else if(i >= 38 && i<76)
+                            al_draw_bitmap(enemy2, alien_x[i], alien_y[i], 0);
+                        else if(i>=76)
+                            al_draw_bitmap(enemy1, alien_x[i], alien_y[i], 0);
                     }
                 }
 
                 if (bullet_fired) { // Pocisk
                     al_draw_filled_rectangle(bullet_x, bullet_y, bullet_x + 3, bullet_y + 12, al_map_rgb(255, 255, 255));
-                    
+
                 }
 
-                al_draw_text(font, al_map_rgb(255,255, 255), 10, bottomSide - 50, ALLEGRO_ALIGN_LEFT, player_name);
+                al_draw_text(font, al_map_rgb(255, 255, 255), 10, bottomSide - 50, ALLEGRO_ALIGN_LEFT, player_name);
                 al_draw_text(font, al_map_rgb(255, 255, 255), 10, 30, ALLEGRO_ALIGN_LEFT, zyciaText); // Aktualizowanie żyć
-                al_draw_text(font, al_map_rgb(255,255,255), 10, 70, ALLEGRO_ALIGN_LEFT, wynikText); // Aktualizowanie wyniku
+                al_draw_text(font, al_map_rgb(255, 255, 255), 10, 70, ALLEGRO_ALIGN_LEFT, wynikText); // Aktualizowanie wyniku
 
                 if (zycia == 0) {
                     save_score(filename, player_name, wynik);
                     oknoGry = 4;
                 }
-                if (num_aliens == 0) {
+                if (aliens_counter == 0) {
                     save_score(filename, player_name, wynik);
                     oknoGry = 5;
                 }
 
                 if (event.type == ALLEGRO_EVENT_KEY_DOWN)
-            {
-                if (event.keyboard.keycode == ALLEGRO_KEY_ESCAPE)
-                    oknoGry = 0;
-            }
-                
+                {
+                    if (event.keyboard.keycode == ALLEGRO_KEY_ESCAPE)
+                        oknoGry = 0;
+                }
+
             }
         }
         if (oknoGry == 3)
         {
             if (event.type == ALLEGRO_EVENT_TIMER) {
-                al_draw_bitmap(tlo1, 0, 0, 0);
-               
-                Print_score(fontLogo,font,rightSide,topSide);
-                
+                al_draw_scaled_bitmap(tlo1, 0, 0, al_get_bitmap_width(tlo1), al_get_bitmap_height(tlo1), 0, 0, rightSide, Height_sreen, 0);
+
+                Print_score(fontLogo, font, rightSide, topSide);
+
             }
             if (event.type == ALLEGRO_EVENT_KEY_DOWN)
             {
@@ -487,7 +514,7 @@ int main() {
         if (oknoGry == 4)
         {
             if (event.type == ALLEGRO_EVENT_TIMER) {
-                al_draw_bitmap(tlo1, 0, 0, 0);
+                al_draw_scaled_bitmap(tlo1, 0, 0, al_get_bitmap_width(tlo1), al_get_bitmap_height(tlo1), 0, 0, rightSide, Height_sreen, 0);
                 al_draw_text(fontLogo, al_map_rgb(0, 255, 0), rightSide / 2, topSide + 128, ALLEGRO_ALIGN_CENTER, "Przegrana");
             }
             if (event.type == ALLEGRO_EVENT_KEY_DOWN)
@@ -499,7 +526,7 @@ int main() {
         if (oknoGry == 5)
         {
             if (event.type == ALLEGRO_EVENT_TIMER) {
-                al_draw_bitmap(tlo1, 0, 0, 0);
+                al_draw_scaled_bitmap(tlo1, 0, 0, al_get_bitmap_width(tlo1), al_get_bitmap_height(tlo1), 0, 0, rightSide, Height_sreen, 0);
                 al_draw_text(fontLogo, al_map_rgb(0, 255, 0), rightSide / 2, topSide + 128, ALLEGRO_ALIGN_CENTER, "Wygrana");
             }
             if (event.type == ALLEGRO_EVENT_KEY_DOWN)
@@ -510,7 +537,7 @@ int main() {
         }
         al_flip_display(); // Przesłanie bieżącej klatki do ekranu
     }
-    
+
 
     // Zwolnienie miejsca
     free(alien_x);
@@ -518,7 +545,7 @@ int main() {
     free(alive);
     al_destroy_display(display);
     al_uninstall_keyboard();
-    
+
     al_destroy_timer(timer);
     al_destroy_sample(gameTheme);
     al_destroy_sample_instance(gameThemeInstance);
@@ -526,7 +553,7 @@ int main() {
     al_destroy_sample_instance(shootThemeInstance);
     al_destroy_sample(invaderKillTheme);
     al_destroy_sample_instance(invaderKillThemeInstance);
-   
+
     al_uninstall_audio();
     al_destroy_font(font);
     return 0;
@@ -558,7 +585,7 @@ void poruszanie(int* graczX, int prawaBanda, int lewaBanda) {
 }
 
 
-void Insert_Name(ALLEGRO_DISPLAY* ekran, ALLEGRO_FONT* czcionka, char* player_name,ALLEGRO_BITMAP * tlo1) {
+void Insert_Name(ALLEGRO_DISPLAY* ekran, ALLEGRO_FONT* czcionka, char* player_name, ALLEGRO_BITMAP* tlo1,int rightSide) {
     ALLEGRO_EVENT_QUEUE* kolejka_zdarzen = al_create_event_queue();
     al_register_event_source(kolejka_zdarzen, al_get_keyboard_event_source());
 
@@ -590,7 +617,7 @@ void Insert_Name(ALLEGRO_DISPLAY* ekran, ALLEGRO_FONT* czcionka, char* player_na
             }
         }
 
-        al_draw_bitmap(tlo1, 0, 0, 0);
+        al_draw_scaled_bitmap(tlo1, 0, 0, al_get_bitmap_width(tlo1), al_get_bitmap_height(tlo1), 0, 0, rightSide, Height_sreen, 0);
         al_draw_text(czcionka, al_map_rgb(255, 255, 255), Width_sreen / 2, Height_sreen / 2 - 20,
             ALLEGRO_ALIGN_CENTER, "Wprowadz swoja nazwe:");
         al_draw_text(czcionka, al_map_rgb(255, 255, 255), Width_sreen / 2, Height_sreen / 2 + 20,
@@ -617,16 +644,16 @@ void save_score(const char* filename, const char player_name[50], int score) {
     fclose(file);
 }
 
-void wyswietl_10_najlepszych(Gracz tablica_wynikow[], int liczba_wynikow, ALLEGRO_FONT* fontLogo, ALLEGRO_FONT* font,int rightSide,int topSide) {
+void wyswietl_10_najlepszych(Gracz tablica_wynikow[], int liczba_wynikow, ALLEGRO_FONT* fontLogo, ALLEGRO_FONT* font, int rightSide, int topSide) {
     ALLEGRO_COLOR color = al_map_rgb(0, 255, 0);
     int y = 100;
 
-    
+
 
     al_draw_textf(fontLogo, color, rightSide / 2, topSide + 64, ALLEGRO_ALIGN_CENTER, "Najlepsze wyniki:");
 
     for (int i = 0; i < 10 && i < liczba_wynikow; i++) {
-        al_draw_textf(font, color, rightSide / 2, topSide + 172,ALLEGRO_ALIGN_CENTER, "%d. %s - %d", i + 1, tablica_wynikow[i].nazwa, tablica_wynikow[i].punkty);
+        al_draw_textf(font, color, rightSide / 2, topSide + 172+y, ALLEGRO_ALIGN_CENTER, "%d. %s - %d", i + 1, tablica_wynikow[i].nazwa, tablica_wynikow[i].punkty);
         y += 30;
     }
 
@@ -651,7 +678,7 @@ int odczytaj_wyniki(Gracz tablica_wynikow[], int max_wynikow) {
 }
 
 // Funkcja odczytująca wyświetlająca
-void Print_score(ALLEGRO_FONT* fontLogo,ALLEGRO_FONT* font,int rightSide,int topSide) {
+void Print_score(ALLEGRO_FONT* fontLogo, ALLEGRO_FONT* font, int rightSide, int topSide) {
     FILE* plik;
     Gracz tablica_wynikow[MAX_SCORES]; // Zdefiniuj rozmiar tablicy wyników
     int liczba_wynikow = 0;
@@ -681,7 +708,5 @@ void Print_score(ALLEGRO_FONT* fontLogo,ALLEGRO_FONT* font,int rightSide,int top
     }
 
     // Wyświetlamy 10 najlepszych wyników
-    wyswietl_10_najlepszych(tablica_wynikow, liczba_wynikow,fontLogo,font,rightSide,topSide);
+    wyswietl_10_najlepszych(tablica_wynikow, liczba_wynikow, fontLogo, font, rightSide, topSide);
 }
-
-
